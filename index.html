@@ -426,21 +426,84 @@ function pushQ(arr, a,b,c,d) {
   arr.push(...a,...c,...d);
 }
 
-// Profil (2D dizi [x,y]) → z0..z1 arası ekstrüzyon
+// 2D polygon alanı (pozitif = CCW)
+function polyArea(pts) {
+  let a = 0;
+  const n = pts.length;
+  for (let i=0;i<n;i++) {
+    const j=(i+1)%n;
+    a += pts[i][0]*pts[j][1] - pts[j][0]*pts[i][1];
+  }
+  return a/2;
+}
+
+// Nokta üçgenin içinde mi? (barycentric)
+function inTriangle(px,py, ax,ay, bx,by, cx,cy) {
+  const d1 = (px-bx)*(ay-by)-(ax-bx)*(py-by);
+  const d2 = (px-cx)*(by-cy)-(bx-cx)*(py-cy);
+  const d3 = (px-ax)*(cy-ay)-(cx-ax)*(py-ay);
+  const hn = (d1<0)||(d2<0)||(d3<0);
+  const hp = (d1>0)||(d2>0)||(d3>0);
+  return !(hn && hp);
+}
+
+// Ear clipping triangulation — concave polygon destekler
+function triangulate(pts) {
+  const tris = [];
+  let poly = pts.map((p,i)=>({x:p[0],y:p[1],i}));
+  // CCW garantile
+  if (polyArea(pts) < 0) poly.reverse();
+
+  let safety = poly.length * poly.length + 10;
+  while (poly.length > 3 && safety-- > 0) {
+    const n = poly.length;
+    let found = false;
+    for (let i=0;i<n;i++) {
+      const a = poly[(i-1+n)%n];
+      const b = poly[i];
+      const c = poly[(i+1)%n];
+      // Çapraz çarpım: b bir "ear" mi?
+      const cross = (b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
+      if (cross <= 0) continue; // reflex vertex
+      // Diğer noktalar bu üçgenin içinde mi?
+      let inside = false;
+      for (let j=0;j<n;j++) {
+        if (j===(i-1+n)%n || j===i || j===(i+1)%n) continue;
+        if (inTriangle(poly[j].x,poly[j].y, a.x,a.y, b.x,b.y, c.x,c.y)) {
+          inside=true; break;
+        }
+      }
+      if (!inside) {
+        tris.push([a,b,c]);
+        poly.splice(i,1);
+        found=true;
+        break;
+      }
+    }
+    if (!found) break; // degenerate
+  }
+  if (poly.length===3) tris.push([poly[0],poly[1],poly[2]]);
+  return tris;
+}
+
+// Profil (2D [x,y] dizisi) → z0..z1 ekstrüzyon
 function extrude(prof, z0, z1) {
   const arr = [];
   const n = prof.length;
-  // Ön yüz (z0) — fan
-  for (let i=1;i<n-1;i++) {
-    arr.push(prof[0][0],prof[0][1],z0, prof[i][0],prof[i][1],z0, prof[i+1][0],prof[i+1][1],z0);
+
+  // Ön/arka yüz: ear clipping
+  const tris = triangulate(prof);
+  for (const [a,b,c] of tris) {
+    // Ön yüz (z0) — CCW dışarıya bakıyor = -Z normal
+    arr.push(a.x,a.y,z0, b.x,b.y,z0, c.x,c.y,z0);
+    // Arka yüz (z1) — ters sıra = +Z normal
+    arr.push(a.x,a.y,z1, c.x,c.y,z1, b.x,b.y,z1);
   }
-  // Arka yüz (z1) — ters sıra
-  for (let i=1;i<n-1;i++) {
-    arr.push(prof[0][0],prof[0][1],z1, prof[i+1][0],prof[i+1][1],z1, prof[i][0],prof[i][1],z1);
-  }
-  // Yan yüzler
+
+  // Yan yüzler (her kenar için bir quad)
   for (let i=0;i<n;i++) {
     const a=prof[i], b=prof[(i+1)%n];
+    // Quad: a0→b0→b1→a1 (dışa bakacak şekilde)
     pushQ(arr, [a[0],a[1],z0],[b[0],b[1],z0],[b[0],b[1],z1],[a[0],a[1],z1]);
   }
   return arr;
