@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dovetail Generator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0e0e;--panel:#161616;--border:#252525;
+  --accent:#ff6b2b;--accent2:#ffb347;
+  --text:#f0ece4;--muted:#555;
+  --blue:#4a9eff;--red:#ff6b6b;
+}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;font-size:14px;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:24px}
+.logo span{color:var(--accent)}
+.sub{font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
+.wrap{display:grid;grid-template-columns:310px 1fr;flex:1;overflow:hidden}
+.sidebar{border-right:1px solid var(--border);padding:18px;overflow-y:auto;display:flex;flex-direction:column;gap:13px}
+.group{background:var(--panel);border:1px solid var(--border);border-radius:7px;padding:16px}
+.gtitle{font-family:'Syne',sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:12px;font-weight:700}
+.row{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.row:last-child{margin-bottom:0}
+.label{font-size:12px;color:#ccc;flex:1;line-height:1.3}
+.unit{font-size:11px;color:var(--muted);width:22px;text-align:right}
+input[type=number]{width:76px;background:#111;border:1px solid var(--border);color:var(--text);font-family:'Space Mono',monospace;font-size:14px;padding:6px 8px;border-radius:4px;text-align:right;outline:none}
+input[type=number]:focus{border-color:var(--accent)}
+.warn{font-size:11px;color:var(--accent2);background:rgba(255,179,71,.07);border:1px solid rgba(255,179,71,.2);border-radius:4px;padding:9px 11px;line-height:1.7;margin-top:10px}
+.right{display:flex;flex-direction:column;overflow:hidden}
+.diagrams{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+.dbox{background:var(--panel);border:1px solid var(--border);border-radius:7px;padding:16px}
+.dtitle{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;font-family:'Syne',sans-serif;font-weight:700}
+svg.d{width:100%;display:block}
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:7px;padding:13px 15px}
+.card .v{font-size:17px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:3px}
+.card .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;line-height:1.5}
+.blue{color:var(--blue)}.red{color:var(--red)}
+.export{border-top:1px solid var(--border);padding:14px 20px;display:flex;gap:10px;flex-shrink:0}
+.btn{padding:11px 18px;border:none;border-radius:5px;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:opacity .15s,transform .12s}
+.btn:hover{opacity:.85;transform:translateY(-1px)}
+.btn-m{background:var(--blue);color:#000}
+.btn-f{background:var(--red);color:#000}
+.btn-b{background:var(--accent);color:#000}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Dove<span>tail</span> Gen</div>
+  <div class="sub">3D Baskı · Kırlangıç Kuyruğu Üreteci</div>
+</header>
+
+<div class="wrap">
+  <div class="sidebar">
+
+    <div class="group">
+      <div class="gtitle">Erkek Parça</div>
+      <div class="row"><span class="label">Ray Genişliği (A)</span><span class="unit">mm</span><input type="number" id="A" value="20" min="4" max="200" step="0.5"></div>
+      <div class="row"><span class="label">Ray Yüksekliği (I)</span><span class="unit">mm</span><input type="number" id="I" value="6" min="1" max="100" step="0.5"></div>
+      <div class="row"><span class="label">Uzunluk</span><span class="unit">mm</span><input type="number" id="len" value="40" min="4" max="500" step="1"></div>
+      <div class="row"><span class="label">Açı (her taraf)</span><span class="unit">°</span><input type="number" id="ang" value="60" min="20" max="80" step="5"></div>
+      <div class="row"><span class="label">Gövde Kalınlığı (G)</span><span class="unit">mm</span><input type="number" id="G" value="4" min="1" max="50" step="0.5"></div>
+    </div>
+
+    <div class="group">
+      <div class="gtitle">Dişi Parça</div>
+      <div class="row"><span class="label">Tolerans (her yüzey)</span><span class="unit">mm</span><input type="number" id="tol" value="0.2" min="0" max="1" step="0.05"></div>
+      <div class="row"><span class="label">Duvar Kalınlığı (J)</span><span class="unit">mm</span><input type="number" id="J" value="4" min="1" max="30" step="0.5"></div>
+      <div class="warn">⚠ PLA: 0.15–0.20 mm<br>PETG: 0.20–0.25 mm önerilir</div>
+    </div>
+
+    <div class="cards">
+      <div class="card"><div class="v blue" id="cv1">—</div><div class="l">Erkek alt genişliği (H)</div></div>
+      <div class="card"><div class="v blue" id="cv2">—</div><div class="l">Erkek toplam yükseklik</div></div>
+      <div class="card"><div class="v red"  id="cv3">—</div><div class="l">Dişi slot genişliği (H+tol)</div></div>
+      <div class="card"><div class="v red"  id="cv4">—</div><div class="l">Dişi toplam yükseklik</div></div>
+    </div>
+
+  </div>
+
+  <div class="right">
+    <div class="diagrams">
+
+      <div class="dbox">
+        <div class="dtitle">Kesit Görünümü — Yan yana montaj</div>
+        <svg class="d" id="svgA" viewBox="0 0 700 380"></svg>
+      </div>
+
+      <div class="dbox">
+        <div class="dtitle">Montaj Kesiti (Takılı Halde)</div>
+        <svg class="d" id="svgB" viewBox="0 0 700 220"></svg>
+      </div>
+
+    </div>
+
+    <div class="export">
+      <button class="btn btn-m" onclick="xport('male')">⬇ Erkek STL</button>
+      <button class="btn btn-f" onclick="xport('female')">⬇ Dişi STL</button>
+      <button class="btn btn-b" onclick="xport('both')">⬇ İkisini İndir</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── PARAMETRELERİ OKU ────────────────────────────────────────────────────────
+/*
+  DOĞRU KIRLANGIC KUYRUĞU GEOMETRİSİ (resme göre):
+
+  ERKEK:
+    - Gövde (taban): A genişliğinde, G kalınlığında düz plaka
+    - Üstüne çıkıntı (ray) oturur: alt kısmı dar (H), açıyla genişleyerek üste doğru
+      HAYIR — kırlangıç kuyruğu tam tersi:
+    - Ray: ALTTAN GENİŞ, YUKARIYA DOĞRU DARILIK — böylece dişi parça üstten kilitler
+      HAYIR YİNE YANLIŞ.
+
+  STANDART DOVETAIL (resim):
+    Erkek: Gövde plakası var. Üstünde çıkıntı var.
+           Çıkıntının kesiti: ALT TARAFTA DAR (H), YAN TARAFLAR AÇIYLA GENİŞLEYEREK
+           YUKARIDA GENİŞ (A) — trapez, altı dar üstü geniş.
+    Dişi:  Gövde plakası var. İçinde kanal açık.
+           Kanal: ERKEK ÇIKINTISININ NERGATİFİ + TOLERANS
+           Kanalın alt açıklığı DAR (H+tol), üstte GENİŞ (A+tol)
+           Dişinin yan duvarları kanalın üstüne uzanır ve erkek rayı hapseder.
+
+  YANLAMASINA (Z ekseni boyunca) kaydırarak takılır. Y veya X yönünde çıkamaz.
+*/
+
+function G() {
+  const A   = Math.max(4,   +document.getElementById('A').value   || 20);
+  const I   = Math.max(1,   +document.getElementById('I').value   || 6);
+  const len = Math.max(4,   +document.getElementById('len').value || 40);
+  const ang = Math.max(10,  +document.getElementById('ang').value || 60);
+  const Gv  = Math.max(1,   +document.getElementById('G').value   || 4);
+  const tol = Math.max(0,   +document.getElementById('tol').value || 0.2);
+  const J   = Math.max(1,   +document.getElementById('J').value   || 4);
+
+  // Açıdan hesaplama: ray alttan dar (H), üsten geniş (A)
+  // A = üst genişlik (kullanıcı girer)
+  // H = alt dar genişlik = A - 2 * I * tan(ang)
+  const spread = I * Math.tan(ang * Math.PI / 180);
+  const H      = Math.max(1, A - 2 * spread);   // erkek ray alt genişliği (dar)
+
+  // Dişi slot: erkek rayının negatifi + tolerans her yüzeye
+  // Slot alt açıklığı (H'den küçük → giremez!) — hayır:
+  // Dişi kanalı: ALT AÇIKLIK = H + 2*tol (dar uca tolerans)
+  //              ÜST GENİŞLİK = A + 2*tol (geniş uca tolerans)
+  const fSlotBot = H + 2 * tol;   // kanalın ALT açıklığı (dar)
+  const fSlotTop = A + 2 * tol;   // kanalın ÜST genişliği (geniş, içeride)
+  const fDepth   = I + tol;       // kanal derinliği
+
+  // Dişi toplam boyutlar
+  const fW = fSlotTop + 2 * J;    // dişi dış genişliği
+  const fH = J + fDepth;          // dişi toplam yüksekliği (J = üst duvar)
+
+  return { A, I, len, ang, Gv, tol, J, spread, H, fSlotBot, fSlotTop, fDepth, fW, fH };
+}
+
+// ─── SVG DOM HELPERS ─────────────────────────────────────────────────────────
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k,v] of Object.entries(attrs)) e.setAttribute(k, String(v));
+  return e;
+}
+function clr(id) {
+  const s = document.getElementById(id);
+  while (s.firstChild) s.removeChild(s.firstChild);
+  return s;
+}
+function poly(svg, pts, fill, stroke, sw, dash) {
+  const e = el('polygon', {
+    points: pts.map(([x,y])=>`${x.toFixed(2)},${y.toFixed(2)}`).join(' '),
+    fill, stroke, 'stroke-width': sw, 'stroke-linejoin':'round',
+    'vector-effect':'non-scaling-stroke'
+  });
+  if (dash) e.setAttribute('stroke-dasharray', dash);
+  svg.appendChild(e);
+}
+function line(svg, x1,y1,x2,y2, stroke, sw, dash) {
+  const e = el('line', {
+    x1:x1.toFixed(2), y1:y1.toFixed(2), x2:x2.toFixed(2), y2:y2.toFixed(2),
+    stroke, 'stroke-width':sw, 'vector-effect':'non-scaling-stroke'
+  });
+  if (dash) e.setAttribute('stroke-dasharray', dash);
+  svg.appendChild(e);
+}
+function text(svg, x,y,str, fill, size, anchor, weight) {
+  const e = el('text', {
+    x:x.toFixed(2), y:y.toFixed(2), fill, 'font-size':size,
+    'font-family':'Space Mono,monospace',
+    'text-anchor': anchor||'middle',
+    'dominant-baseline':'middle',
+    'font-weight': weight||'normal'
+  });
+  e.textContent = str;
+  svg.appendChild(e);
+}
+function rect(svg, x,y,w,h, fill, stroke, sw) {
+  const e = el('rect', {
+    x:x.toFixed(2), y:y.toFixed(2), width:w.toFixed(2), height:h.toFixed(2), fill
+  });
+  if (stroke) { e.setAttribute('stroke', stroke); e.setAttribute('stroke-width', sw||1); }
+  svg.appendChild(e);
+}
+function dim(svg, x1,y1,x2,y2, label, color, dir, off) {
+  const tw = label.length * 5.8 + 12, th = 14;
+  if (dir === 'h') {
+    const lx=(x1+x2)/2, ly=y1+off;
+    line(svg, x1,y1,x2,y1, color,1);
+    line(svg, x1,y1,x1,ly, color,0.5,'3,3');
+    line(svg, x2,y1,x2,ly, color,0.5,'3,3');
+    rect(svg, lx-tw/2, ly-th/2, tw, th, '#161616');
+    text(svg, lx,ly, label, color, 10);
+  } else {
+    const lx=x1+off, ly=(y1+y2)/2;
+    line(svg, x1,y1,x1,y2, color,1);
+    line(svg, x1,y1,lx,y1, color,0.5,'3,3');
+    line(svg, x1,y2,lx,y2, color,0.5,'3,3');
+    rect(svg, lx-tw/2, ly-th/2, tw, th, '#161616');
+    text(svg, lx,ly, label, color, 10);
+  }
+}
+
+// ─── KESİT DİYAGRAMI ─────────────────────────────────────────────────────────
+/*
+  ERKEK KESİT (soldan sağa bakış, Z ekseninde baktığımızda):
+
+  Gövde plakası: genişlik A+2 (biraz daha geniş), yükseklik G
+  Ray (çıkıntı): altı dar (H), üstü geniş (A), yükseklik I
+                 Koordinat: gövde üstü y=0, ray tepesi y=I
+                 ALT (y=0): ±H/2
+                 ÜST (y=I): ±A/2
+
+  DİŞİ KESİT:
+  Dıştan blok: genişlik fW, yükseklik fH
+  İçinde kanal (aşağıdan açık):
+    - Kanalın ALT açıklığı (y=0): ±fSlotBot/2
+    - Kanalın ÜST genişliği (y=fDepth): ±fSlotTop/2
+    - Kanal derinliği: fDepth
+  Üst duvar kalınlığı: J (y=fDepth'den y=fH'a kadar)
+
+  Dişi kayarak (Z ekseninde) erkek rayın üstüne geçirilir.
+  Dişinin alt yüzeyi erkek gövdesinin üst yüzeyi ile temas eder.
+  Kanal erkek rayı sarar → Y ve X yönünde kilitli.
+*/
+function drawSection() {
+  const p = G();
+  const svg = clr('svgA');
+  const W=700, H=380, hw=W/2;
+
+  line(svg, hw,8,hw,H-8, '#252525',1);
+
+  // ── ERKEK (sol) ──────────────────────────────────────────────────────────
+  const mTW = p.A + 4;
+  const mTH = p.Gv + p.I;
+  const mSX = (hw-90) / (mTW + 16);
+  const mSY = (H-80)  / (mTH + 8);
+  const mS  = Math.min(mSX, mSY, 18);
+  const mCX = hw/2;
+  const mY0 = H - 50;  // y=0: gövde üst yüzeyi / ray tabanı
+
+  const mx = v => mCX + v*mS;
+  const my = v => mY0 - v*mS;
+
+  // Gövde plakası (y: -Gv → 0)
+  poly(svg, [
+    [mx(-(p.A/2+1)), my(-p.Gv)],
+    [mx(  p.A/2+1),  my(-p.Gv)],
+    [mx(  p.A/2+1),  my(0)],
+    [mx(-(p.A/2+1)), my(0)],
+  ], 'rgba(74,158,255,0.13)', '#4a9eff', 2);
+
+  // Ray: y=0'da DAR (H), y=I'da GENİŞ (A) — ters trapez
+  poly(svg, [
+    [mx(-p.H/2), my(0)],
+    [mx( p.H/2), my(0)],
+    [mx( p.A/2), my(p.I)],
+    [mx(-p.A/2), my(p.I)],
+  ], 'rgba(74,158,255,0.28)', '#4a9eff', 2.5);
+
+  text(svg, mCX, 20, 'ERKEK PARÇA', '#4a9eff', 13, 'middle','700');
+
+  // Ölçüler
+  const mPW = p.A/2+1;
+  dim(svg, mx(-p.A/2),  my(p.I),   mx(p.A/2),  my(p.I),   `A=${p.A}mm`,             '#4a9eff','h',-28);
+  dim(svg, mx(-p.H/2),  my(0),     mx(p.H/2),  my(0),     `H=${p.H.toFixed(1)}mm`,  '#4a9eff','h', 24);
+  dim(svg, mx(mPW)+8,   my(0),     mx(mPW)+8,  my(p.I),   `I=${p.I}mm`,             '#4a9eff','v', 36);
+  dim(svg, mx(-mPW)-8,  my(-p.Gv), mx(-mPW)-8, my(0),     `G=${p.Gv}mm`,            '#4a9eff','v',-38);
+  text(svg, mx(p.A/4), my(p.I/2), `${p.ang}°`, '#7ab5ff', 11);
+
+  // ── DİŞİ (sağ) ───────────────────────────────────────────────────────────
+  // Dişi kesit: blok yüksekliği = fH = J + fDepth
+  // Koordinat: y=0 → dişi ALT yüzeyi (erkek gövdesiyle temas)
+  // y=fDepth → kanal tavanı (erkek ray tepesiyle temas - tol)
+  // y=fH    → dişi üst yüzeyi
+  // Kanal: y=0'da açıklık ±fSlotBot/2, y=fDepth'de ±fSlotTop/2
+
+  const fTW = p.fW;
+  const fTH = p.fH;
+  const fSX = (hw-90) / (fTW + 16);
+  const fSY = (H-80)  / (fTH + 8);
+  const fS  = Math.min(fSX, fSY, 18);
+  const fCX = hw + hw/2;
+  const fY0 = H - 50;
+
+  const fx = v => fCX + v*fS;
+  const fy = v => fY0 - v*fS;
+
+  const oHW = p.fW/2;
+
+  // Dış blok
+  poly(svg, [
+    [fx(-oHW), fy(0)],
+    [fx( oHW), fy(0)],
+    [fx( oHW), fy(p.fH)],
+    [fx(-oHW), fy(p.fH)],
+  ], 'rgba(255,107,107,0.13)', '#ff6b6b', 2);
+
+  // Kanal (aşağıdan açık: y=0'da dar, y=fDepth'de geniş)
+  poly(svg, [
+    [fx(-p.fSlotBot/2), fy(0)],
+    [fx( p.fSlotBot/2), fy(0)],
+    [fx( p.fSlotTop/2), fy(p.fDepth)],
+    [fx(-p.fSlotTop/2), fy(p.fDepth)],
+  ], '#0e0e0e', '#ff6b6b', 2, '6,3');
+
+  text(svg, fCX, 20, 'DİŞİ PARÇA', '#ff6b6b', 13, 'middle','700');
+
+  dim(svg, fx(-oHW),          fy(p.fH),     fx(oHW),          fy(p.fH),     `W=${p.fW.toFixed(1)}mm`,       '#ff6b6b','h',-28);
+  dim(svg, fx(-p.fSlotTop/2), fy(p.fDepth), fx(p.fSlotTop/2), fy(p.fDepth), `A+=${p.fSlotTop.toFixed(2)}mm`,'#ff9999','h',-14);
+  dim(svg, fx(-p.fSlotBot/2), fy(0),        fx(p.fSlotBot/2), fy(0),        `H+=${p.fSlotBot.toFixed(2)}mm`,'#ff9999','h', 24);
+  dim(svg, fx(oHW)+8,  fy(0),  fx(oHW)+8,  fy(p.fDepth), `I+=${p.fDepth.toFixed(2)}mm`,  '#ff6b6b','v', 38);
+  dim(svg, fx(-oHW)-8, fy(p.fDepth), fx(-oHW)-8, fy(p.fH),  `J=${p.J}mm`,                '#ff9999','v',-38);
+}
+
+// ─── MONTAJ KESİTİ ────────────────────────────────────────────────────────────
+function drawAssembly() {
+  const p = G();
+  const svg = clr('svgB');
+  const W=700, H=220;
+
+  // Takılı halde: dişi erkek rayının üstüne oturmuş
+  // Ortalanmış çiz
+  const totW = p.fW + 8;
+  const totH = p.Gv + p.I + p.J;  // erkek gövde + ray + dişi üst duvar
+  const sX = (W-120)/totW;
+  const sY = (H-40)/totH;
+  const S  = Math.min(sX, sY, 16);
+
+  const cx = W/2;
+  // y=0: erkek gövde altı
+  // y=Gv: erkek gövde üstü / ray başlangıcı
+  // y=Gv+I: ray tepesi = dişi kanal tavanı
+  // y=Gv+I+J: dişi üst yüzeyi
+  const Y0 = H - 20;
+
+  const sx2 = v => cx + v*S;
+  const sy2 = v => Y0 - v*S;
+
+  // Erkek gövde
+  poly(svg, [
+    [sx2(-(p.A/2+1)), sy2(0)],
+    [sx2(  p.A/2+1),  sy2(0)],
+    [sx2(  p.A/2+1),  sy2(p.Gv)],
+    [sx2(-(p.A/2+1)), sy2(p.Gv)],
+  ], 'rgba(74,158,255,0.15)', '#4a9eff', 2);
+
+  // Erkek ray
+  poly(svg, [
+    [sx2(-p.H/2),  sy2(p.Gv)],
+    [sx2( p.H/2),  sy2(p.Gv)],
+    [sx2( p.A/2),  sy2(p.Gv+p.I)],
+    [sx2(-p.A/2),  sy2(p.Gv+p.I)],
+  ], 'rgba(74,158,255,0.30)', '#4a9eff', 2.5);
+
+  // Dişi blok (sol duvar)
+  poly(svg, [
+    [sx2(-p.fW/2),         sy2(p.Gv)],
+    [sx2(-p.fSlotBot/2),   sy2(p.Gv)],
+    [sx2(-p.fSlotTop/2),   sy2(p.Gv+p.fDepth)],
+    [sx2(-p.fW/2),         sy2(p.Gv+p.fDepth)],
+    [sx2(-p.fW/2),         sy2(p.Gv+p.fH)],
+    [sx2( p.fW/2),         sy2(p.Gv+p.fH)],
+    [sx2( p.fW/2),         sy2(p.Gv+p.fDepth)],
+    [sx2( p.fSlotTop/2),   sy2(p.Gv+p.fDepth)],
+    [sx2( p.fSlotBot/2),   sy2(p.Gv)],
+    [sx2( p.fW/2),         sy2(p.Gv)],
+  ], 'rgba(255,107,107,0.20)', '#ff6b6b', 2);
+
+  // Tolerans boşluğu göster (ince çizgi)
+  line(svg, sx2(-p.A/2), sy2(p.Gv+p.I), sx2(-p.fSlotTop/2), sy2(p.Gv+p.fDepth), '#ff6b6b', 0.5, '3,3');
+  line(svg, sx2( p.A/2), sy2(p.Gv+p.I), sx2( p.fSlotTop/2), sy2(p.Gv+p.fDepth), '#ff6b6b', 0.5, '3,3');
+
+  // Etiketler
+  text(svg, cx, H-8, `Tolerans: ${p.tol}mm · Z ekseninde kaydırarak takılır`, '#666', 10);
+  text(svg, sx2(-(p.fW/2+14)), sy2(p.Gv+p.fH/2), 'DİŞİ', '#ff6b6b', 11, 'end','700');
+  text(svg, sx2(-(p.A/2+10)),  sy2(p.Gv/2),       'ERKEK', '#4a9eff', 11, 'end','700');
+
+  // Ok: kaydırma yönü
+  const arY = sy2(p.Gv + p.fH/2);
+  line(svg, sx2(p.fW/2+8), arY, sx2(p.fW/2+32), arY, '#888', 1.5);
+  line(svg, sx2(p.fW/2+22), arY-5, sx2(p.fW/2+32), arY, '#888', 1.5);
+  line(svg, sx2(p.fW/2+22), arY+5, sx2(p.fW/2+32), arY, '#888', 1.5);
+  text(svg, sx2(p.fW/2+50), arY-10, 'takılma', '#555', 9);
+  text(svg, sx2(p.fW/2+50), arY+2,  'yönü →Z', '#555', 9);
+}
+
+// ─── INFO CARDS ──────────────────────────────────────────────────────────────
+function updateCards() {
+  const p = G();
+  document.getElementById('cv1').textContent = p.H.toFixed(2)        + ' mm';
+  document.getElementById('cv2').textContent = (p.Gv+p.I).toFixed(1) + ' mm';
+  document.getElementById('cv3').textContent = p.fSlotBot.toFixed(2)  + ' mm';
+  document.getElementById('cv4').textContent = p.fH.toFixed(1)        + ' mm';
+}
+
+function update() { drawSection(); drawAssembly(); updateCards(); }
+
+// ─── STL GEOMETRİ ────────────────────────────────────────────────────────────
+function pushQ(arr, a,b,c,d) {
+  arr.push(...a,...b,...c);
+  arr.push(...a,...c,...d);
+}
+
+// Profil (2D dizi [x,y]) → z0..z1 arası ekstrüzyon
+function extrude(prof, z0, z1) {
+  const arr = [];
+  const n = prof.length;
+  // Ön yüz (z0) — fan
+  for (let i=1;i<n-1;i++) {
+    arr.push(prof[0][0],prof[0][1],z0, prof[i][0],prof[i][1],z0, prof[i+1][0],prof[i+1][1],z0);
+  }
+  // Arka yüz (z1) — ters sıra
+  for (let i=1;i<n-1;i++) {
+    arr.push(prof[0][0],prof[0][1],z1, prof[i+1][0],prof[i+1][1],z1, prof[i][0],prof[i][1],z1);
+  }
+  // Yan yüzler
+  for (let i=0;i<n;i++) {
+    const a=prof[i], b=prof[(i+1)%n];
+    pushQ(arr, [a[0],a[1],z0],[b[0],b[1],z0],[b[0],b[1],z1],[a[0],a[1],z1]);
+  }
+  return arr;
+}
+
+function buildMale(p) {
+  const z0=-p.len/2, z1=p.len/2;
+  // Profil: gövde plakası + ray birleşik (8 nokta)
+  const bHW = p.A/2 + 1; // gövde yarı genişliği
+  const prof = [
+    [-bHW,    -p.Gv],  // gövde sol-alt
+    [ bHW,    -p.Gv],  // gövde sağ-alt
+    [ bHW,     0],     // gövde sağ-üst
+    [ p.H/2,   0],     // ray sağ-alt (dar)
+    [ p.A/2,   p.I],   // ray sağ-üst (geniş)
+    [-p.A/2,   p.I],   // ray sol-üst (geniş)
+    [-p.H/2,   0],     // ray sol-alt (dar)
+    [-bHW,     0],     // gövde sol-üst
+  ];
+  return extrude(prof, z0, z1);
+}
+
+function buildFemale(p) {
+  const z0=-p.len/2, z1=p.len/2;
+  const oHW = p.fW/2;
+  // Dişi profil: dıştan blok, içten kanal (aşağıdan açık)
+  // Profil CCW, kanal boşluğu çıkarılmış şekilde:
+  // Dış kontur → içe kanal → dışa dön (U-profil gibi)
+  const prof = [
+    [-oHW,            0],            // dış sol-alt
+    [-p.fSlotBot/2,   0],            // kanal sol-alt açıklığı
+    [-p.fSlotTop/2,   p.fDepth],     // kanal sol-üst
+    [ p.fSlotTop/2,   p.fDepth],     // kanal sağ-üst
+    [ p.fSlotBot/2,   0],            // kanal sağ-alt açıklığı
+    [ oHW,            0],            // dış sağ-alt
+    [ oHW,            p.fH],         // dış sağ-üst
+    [-oHW,            p.fH],         // dış sol-üst
+  ];
+  return extrude(prof, z0, z1);
+}
+
+function toSTL(arr) {
+  const tc = Math.floor(arr.length/9);
+  const buf = new ArrayBuffer(84+tc*50);
+  const dv = new DataView(buf);
+  let off=80;
+  dv.setUint32(off,tc,true); off+=4;
+  for (let i=0;i<tc;i++) {
+    const ax=arr[i*9], ay=arr[i*9+1], az=arr[i*9+2];
+    const bx=arr[i*9+3], by=arr[i*9+4], bz=arr[i*9+5];
+    const cx=arr[i*9+6], cy=arr[i*9+7], cz=arr[i*9+8];
+    const ux=bx-ax,uy=by-ay,uz=bz-az, wx=cx-ax,wy=cy-ay,wz=cz-az;
+    let nx=uy*wz-uz*wy, ny=uz*wx-ux*wz, nz=ux*wy-uy*wx;
+    const nl=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;
+    nx/=nl;ny/=nl;nz/=nl;
+    for (const n of [nx,ny,nz,ax,ay,az,bx,by,bz,cx,cy,cz]) {
+      dv.setFloat32(off,n,true); off+=4;
+    }
+    dv.setUint16(off,0,true); off+=2;
+  }
+  return buf;
+}
+
+function dl(buf,name) {
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([buf],{type:'application/octet-stream'}));
+  a.download=name; a.click();
+}
+
+function xport(which) {
+  const p=G();
+  if (which==='male'||which==='both')   dl(toSTL(buildMale(p)),   'dovetail_erkek.stl');
+  if (which==='female'||which==='both') setTimeout(()=>dl(toSTL(buildFemale(p)),'dovetail_disi.stl'),which==='both'?400:0);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+document.querySelectorAll('input').forEach(e=>e.addEventListener('input',update));
+update();
+</script>
+</body>
+</html>
