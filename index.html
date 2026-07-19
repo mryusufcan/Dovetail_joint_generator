@@ -511,38 +511,76 @@ function extrude(prof, z0, z1) {
 
 function buildMale(p) {
   const z0=-p.len/2, z1=p.len/2;
-  // Profil: gövde plakası + ray birleşik (8 nokta)
-  const bHW = p.A/2 + 1; // gövde yarı genişliği
+  const bHW = p.A/2 + 1;
   const prof = [
-    [-bHW,    -p.Gv],  // gövde sol-alt
-    [ bHW,    -p.Gv],  // gövde sağ-alt
-    [ bHW,     0],     // gövde sağ-üst
-    [ p.H/2,   0],     // ray sağ-alt (dar)
-    [ p.A/2,   p.I],   // ray sağ-üst (geniş)
-    [-p.A/2,   p.I],   // ray sol-üst (geniş)
-    [-p.H/2,   0],     // ray sol-alt (dar)
-    [-bHW,     0],     // gövde sol-üst
+    [-bHW,  -p.Gv],
+    [ bHW,  -p.Gv],
+    [ bHW,   0],
+    [ p.H/2, 0],
+    [ p.A/2, p.I],
+    [-p.A/2, p.I],
+    [-p.H/2, 0],
+    [-bHW,   0],
   ];
   return extrude(prof, z0, z1);
 }
 
 function buildFemale(p) {
-  const z0=-p.len/2, z1=p.len/2;
-  const oHW = p.fW/2;
-  // Dişi profil: dıştan blok, içten kanal (aşağıdan açık)
-  // Profil CCW, kanal boşluğu çıkarılmış şekilde:
-  // Dış kontur → içe kanal → dışa dön (U-profil gibi)
-  const prof = [
-    [-oHW,            0],            // dış sol-alt
-    [-p.fSlotBot/2,   0],            // kanal sol-alt açıklığı
-    [-p.fSlotTop/2,   p.fDepth],     // kanal sol-üst
-    [ p.fSlotTop/2,   p.fDepth],     // kanal sağ-üst
-    [ p.fSlotBot/2,   0],            // kanal sağ-alt açıklığı
-    [ oHW,            0],            // dış sağ-alt
-    [ oHW,            p.fH],         // dış sağ-üst
-    [-oHW,            p.fH],         // dış sol-üst
+  // Dişiyi 3 ayrı solid box olarak yap:
+  // 1) Sol duvar
+  // 2) Sağ duvar
+  // 3) Üst plaka (kanal tavanı + üstü)
+  // Hepsini birleştir → kanal tamamen açık kalır
+
+  const z0 = -p.len/2, z1 = p.len/2;
+  const arr = [];
+
+  const oHW     = p.fW / 2;          // dış yarı genişlik
+  const slBotHW = p.fSlotBot / 2;    // kanal alt açıklığı yarı genişlik (dar)
+  const slTopHW = p.fSlotTop / 2;    // kanal üst genişliği yarı genişlik (geniş)
+  const yBot    = 0;                  // alt yüzey
+  const ySlot   = p.fDepth;          // kanal tavanı
+  const yTop    = p.fH;              // üst yüzey
+
+  // Sol duvar: x: -oHW → -slBotHW (alt), -slTopHW (kanal tavanında)
+  // Trapez profil (düz değil — açılı iç yüzey)
+  const leftProf = [
+    [-oHW,    yBot],
+    [-slBotHW,yBot],
+    [-slTopHW,ySlot],
+    [-oHW,    ySlot],
   ];
-  return extrude(prof, z0, z1);
+  arr.push(...extrude(leftProf, z0, z1));
+
+  // Sol duvar üst kısmı (kanal tavanından yukarı): dikdörtgen
+  const leftTopProf = [
+    [-oHW, ySlot],
+    [-slTopHW, ySlot],
+    [-slTopHW, yTop],   // burada slTopHW'ye kadar uzanıyor ama üst plaka kapatır
+    [-oHW, yTop],
+  ];
+  // Aslında üst plaka tüm genişliği kapsar, sol/sağ duvar üst kısmı gerekmiyor
+  // Sadece sol trapez duvar + sağ trapez duvar + üst tam plaka yeterli
+
+  // Sağ duvar
+  const rightProf = [
+    [slBotHW, yBot],
+    [oHW,     yBot],
+    [oHW,     ySlot],
+    [slTopHW, ySlot],
+  ];
+  arr.push(...extrude(rightProf, z0, z1));
+
+  // Üst plaka: tam genişlik, kanal tavanından üste
+  const topProf = [
+    [-oHW,  ySlot],
+    [ oHW,  ySlot],
+    [ oHW,  yTop],
+    [-oHW,  yTop],
+  ];
+  arr.push(...extrude(topProf, z0, z1));
+
+  return arr;
 }
 
 function toSTL(arr) {
