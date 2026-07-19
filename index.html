@@ -62,7 +62,7 @@ svg.d{width:100%;display:block}
       <div class="row"><span class="label">Ray Genişliği (A)</span><span class="unit">mm</span><input type="number" id="A" value="20" min="4" max="200" step="0.5"></div>
       <div class="row"><span class="label">Ray Yüksekliği (I)</span><span class="unit">mm</span><input type="number" id="I" value="6" min="1" max="100" step="0.5"></div>
       <div class="row"><span class="label">Uzunluk</span><span class="unit">mm</span><input type="number" id="len" value="40" min="4" max="500" step="1"></div>
-      <div class="row"><span class="label">Açı (her taraf)</span><span class="unit">°</span><input type="number" id="ang" value="60" min="20" max="80" step="5"></div>
+      <div class="row"><span class="label">Açı (her taraf)</span><span class="unit">°</span><input type="number" id="ang" value="40" min="20" max="80" step="5"></div>
       <div class="row"><span class="label">Gövde Kalınlığı (G)</span><span class="unit">mm</span><input type="number" id="G" value="4" min="1" max="50" step="0.5"></div>
     </div>
 
@@ -133,7 +133,7 @@ function G() {
   const A   = Math.max(4,   +document.getElementById('A').value   || 20);
   const I   = Math.max(1,   +document.getElementById('I').value   || 6);
   const len = Math.max(4,   +document.getElementById('len').value || 40);
-  const ang = Math.max(10,  +document.getElementById('ang').value || 30);
+  const ang = Math.max(10,  +document.getElementById('ang').value || 60);
   const Gv  = Math.max(1,   +document.getElementById('G').value   || 4);
   const tol = Math.max(0,   +document.getElementById('tol').value || 0.2);
   const J   = Math.max(1,   +document.getElementById('J').value   || 4);
